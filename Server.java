@@ -1,8 +1,8 @@
 
-import java.util.Scanner;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.InputMismatchException;
+import java.util.Scanner;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -244,18 +244,21 @@ public class Server extends Thread {
      * @return account index position or -1
      * @param accNumber
      */
-     public int findAccount(String accNumber)
-     {
-         int i = 0;
-         
-         /* Find account */
-         while ( !(account[i].getAccountNumber().equals(accNumber)))
-             i++;
-         if (i == getNumberOfAccounts())
-             return -1;
-         else
-             return i;
-     }
+    public int findAccount(String accNumber) {
+        int i = 0;
+    
+        // Find account while ensuring non-null entries
+        while (i < getNumberOfAccounts() && account[i] != null && !account[i].getAccountNumber().equals(accNumber)) {
+            i++;
+        }
+    
+        if (i == getNumberOfAccounts() || account[i] == null) {
+            return -1; // Return -1 if account not found or entry is null
+        } else {
+            return i; // Return the index of the account if found
+        }
+    }
+    
      
     /** 
      * Processing of the transactions
@@ -333,7 +336,7 @@ public class Server extends Thread {
      * @param i, amount
      */
    
-     public double deposit(int i, double amount)
+     public synchronized double deposit(int i, double amount)
      {  double curBalance;      /* Current account balance */
        
      		curBalance = account[i].getBalance( );          /* Get current account balance */
@@ -362,7 +365,7 @@ public class Server extends Thread {
      * @param i, amount
      */
  
-     public double withdraw(int i, double amount)
+     public synchronized double withdraw(int i, double amount)
      {  double curBalance;      /* Current account balance */
         
      	curBalance = account[i].getBalance( );          /* Get current account balance */
@@ -381,7 +384,7 @@ public class Server extends Thread {
      * @param i
      */
  
-     public double query(int i)
+     public synchronized double query(int i)
      {  double curBalance;      /* Current account balance */
         
      	curBalance = account[i].getBalance( );          /* Get current account balance */
@@ -408,22 +411,27 @@ public class Server extends Thread {
      * @param
      */
       
-    public void run()
-    {   Transactions trans = new Transactions();
-    	 long serverStartTime, serverEndTime;
-    
-	/* System.out.println("\n DEBUG : Server.run() - starting server thread " + getServerThreadId() + " " + Network.getServerConnectionStatus()); */
-    	
-	Transactions trans = new Transactions();
-    	long serverStartTime, serverEndTime;
-    
-	/* System.out.println("\n DEBUG : Server.run() - starting server thread " + objNetwork.getServerConnectionStatus()); */
-    	
-    	/* .....................................................................................................................................................................................................*/
-        
-        System.out.println("\n Terminating server thread - " + " Running time " + (serverEndTime - serverStartTime) + " milliseconds");
-	
-    }
+     @Override
+     public void run() {
+         long startTime = System.currentTimeMillis(); // Start time for running time measurement
+     
+         Transactions transact = new Transactions();
+         while (Network.serverIsConnected()) { 
+             if (Network.transferIn(transact)) { // Transfer in from input buffer
+                 processTransactions(transact); // Process the transaction
+                 while (Network.isFull()) {
+                     Thread.yield(); // Yield if the output buffer is full
+                 }
+                 Network.transferOut(transact); // Transfer out to output buffer
+             } else {
+                 Thread.yield(); // Yield if input buffer is empty
+             }
+         }
+     
+         long endTime = System.currentTimeMillis(); // End time for running time measurement
+         System.out.println("Server thread running time: " + (endTime - startTime) + " ms");
+     }
+     
 }
 
 
