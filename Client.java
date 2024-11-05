@@ -221,6 +221,8 @@ public class Client extends Thread {
             receiveClientEndTime = System.currentTimeMillis(); // End time for receiving
             System.out.println("\n Terminating client receiving thread - Running time: " 
                                + (receiveClientEndTime - receiveClientStartTime) + " ms");
+            Network.disconnect(Network.getClientIP());
+
         }
     }
     

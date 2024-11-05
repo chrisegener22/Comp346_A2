@@ -34,31 +34,28 @@ public class Server extends Thread {
      * @return 
      * @param stid
      */
-    Server(String stid)
-    {
-    	if ( !(Network.getServerConnectionStatus().equals("connected")))
-    	{
-    		System.out.println("\n Initializing the server ...");
-    		numberOfTransactions = 0;
-    		numberOfAccounts = 0;
-    		maxNbAccounts = 100;
-    		serverThreadId = stid;							/* unshared variable so each thread has its own copy */
-    		serverThreadRunningStatus1 = "idle";				
-    		account = new Accounts[maxNbAccounts];
-    		System.out.println("\n Inializing the Accounts database ...");
-    		initializeAccounts( );
-    		System.out.println("\n Connecting server to network ...");
-    		if (!(Network.connect(Network.getServerIP())))
-    		{
-    			System.out.println("\n Terminating server application, network unavailable");
-    			System.exit(0);
-    		}
-    	}
-    	else
-    	{
-    		serverThreadId = stid;							/* unshared variable so each thread has its own copy */
-    		serverThreadRunningStatus2 = "idle";				
-    	}
+    public Server(String stid) {
+        serverThreadId = stid;
+
+        if (stid.equals("Thread1")) {
+            serverThreadRunningStatus1 = "idle";
+        } else {
+            serverThreadRunningStatus2 = "idle";
+        }
+
+        if (!Network.getServerConnectionStatus().equals("connected")) {
+            System.out.println("\n Initializing the server ...");
+            numberOfTransactions = 0;
+            numberOfAccounts = 0;
+            maxNbAccounts = 100;
+            account = new Accounts[maxNbAccounts];
+            initializeAccounts();
+            System.out.println("\n Connecting server to network ...");
+            if (!Network.connect(Network.getServerIP())) {
+                System.out.println("\n Terminating server application, network unavailable");
+                System.exit(0);
+            }
+        }
     }
   
     /** 
@@ -308,7 +305,7 @@ public class Server extends Thread {
      * @param i, amount
      */
    
-     public double deposit(int i, double amount)
+     public synchronized double deposit(int i, double amount)
      {  double curBalance;      /* Current account balance */
        
      		curBalance = account[i].getBalance( );          /* Get current account balance */
@@ -337,7 +334,7 @@ public class Server extends Thread {
      * @param i, amount
      */
  
-     public double withdraw(int i, double amount) {
+     public synchronized double withdraw(int i, double amount) {
         double curBalance = account[i].getBalance();
     
         if (curBalance < amount) {
@@ -357,7 +354,7 @@ public class Server extends Thread {
      * @param i
      */
  
-     public double query(int i)
+     public synchronized double query(int i)
      {  double curBalance;      /* Current account balance */
         
      	curBalance = account[i].getBalance( );          /* Get current account balance */
@@ -386,13 +383,32 @@ public class Server extends Thread {
       
      public void run() {
         Transactions trans = new Transactions();
-        long serverStartTime = System.currentTimeMillis(); // Start timing
+        long serverStartTime = System.currentTimeMillis();
+    
+        // Set the running status based on thread ID
+        if (serverThreadId.equals("Thread1")) {
+            serverThreadRunningStatus1 = "running";
+        } else {
+            serverThreadRunningStatus2 = "running";
+        }
+    
+        // Process all transactions
+        processTransactions(trans);
+    
+        long serverEndTime = System.currentTimeMillis();
+    
+        // Set the terminated status and print termination message
+        if (serverThreadId.equals("Thread1")) {
+            serverThreadRunningStatus1 = "terminated";
+        } else {
+            serverThreadRunningStatus2 = "terminated";
+        }
+    
+        Network.disconnect(Network.getServerIP());
 
-        processTransactions(trans); // Process all transactions
-
-        long serverEndTime = System.currentTimeMillis(); // End timing
-        System.out.println("\n Terminating server thread - " + " Running time: " + (serverEndTime - serverStartTime) + " ms");
+        System.out.println("\nTerminating " + serverThreadId + " - Running time: " + (serverEndTime - serverStartTime) + " ms");
     }
+    
 }
 
 

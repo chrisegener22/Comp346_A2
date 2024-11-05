@@ -351,7 +351,7 @@ public class Network extends Thread {
      * @param inPacket transaction transferred from the client
      * 
      */
-        public static boolean send(Transactions inPacket)
+        public synchronized static boolean send(Transactions inPacket)
         {
         	
         		  inComingPacket[inputIndexClient].setAccountNumber(inPacket.getAccountNumber());
@@ -385,7 +385,7 @@ public class Network extends Thread {
      * @param outPacket updated transaction received by the client
      * 
      */
-         public static boolean receive(Transactions outPacket)
+         public synchronized static boolean receive(Transactions outPacket)
         {
 
         		 outPacket.setAccountNumber(outGoingPacket[outputIndexClient].getAccountNumber());
@@ -558,24 +558,28 @@ public class Network extends Thread {
         System.out.println("\n DEBUG: Network.run() - starting network thread");
     
         while (networkStatus.equals("active")) {
-            if (clientConnectionStatus.equals("disconnected") && serverConnectionStatus.equals("disconnected")) {
-                networkStatus = "inactive";
+            // Check if both client and server are disconnected, then deactivate the network
+            if (getClientConnectionStatus().equals("disconnected") && getServerConnectionStatus().equals("disconnected")) {
+                setNetworkStatus("inactive");
                 System.out.println("Terminating network thread - both client and server are disconnected.");
                 break;
             }
     
-            // Process buffer states with yields
+            // Control processing based on buffer statuses and connection statuses
             if (inBufferStatus.equals("full") && clientConnectionStatus.equals("connected")) {
-                Thread.yield();
+                Thread.yield();  // Allow client to process full buffer
             }
     
             if (outBufferStatus.equals("empty") && serverConnectionStatus.equals("connected")) {
-                Thread.yield();
+                Thread.yield();  // Allow server to populate empty buffer
             }
     
-            Thread.yield();
+            Thread.yield();  // General yield to allow other threads time to process
         }
+        
+        System.out.println("Network thread terminated cleanly.");
     }
+    
     
     
 }
