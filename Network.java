@@ -1,10 +1,11 @@
+
+import java.util.concurrent.*;
+
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
-import java.util.concurrent.Semaphore;
 
 /** Network class
  *
@@ -23,9 +24,6 @@ public class Network extends Thread {
     private static Transactions outGoingPacket[];              /* Outgoing network buffer */
     private static String inBufferStatus, outBufferStatus;     /* Current status of the network buffers - normal, full, empty */
     private static String networkStatus;                       /* Network status - active, inactive */
-    private static final Semaphore inBufferSemaphore = new Semaphore(maxNbPackets); // Controls in buffer
-    private static final Semaphore outBufferSemaphore = new Semaphore(0); // Controls out buffer
-
        
     /** 
      * Constructor of the Network class
@@ -353,75 +351,68 @@ public class Network extends Thread {
      * @param inPacket transaction transferred from the client
      * 
      */
-    public static synchronized boolean send(Transactions inPacket) {
-        if (inPacket == null) {
-            System.out.println("Error: Attempted to send a null transaction.");
-            return false;
-        }
-    
-        try {
-            inBufferSemaphore.acquire(); // Acquire permission to use input buffer
-    
-            // Preserve existing buffer operations
-            inComingPacket[inputIndexClient].setAccountNumber(inPacket.getAccountNumber());
-            inComingPacket[inputIndexClient].setOperationType(inPacket.getOperationType());
-            inComingPacket[inputIndexClient].setTransactionAmount(inPacket.getTransactionAmount());
-            inComingPacket[inputIndexClient].setTransactionBalance(inPacket.getTransactionBalance());
-            inComingPacket[inputIndexClient].setTransactionError(inPacket.getTransactionError());
-            inComingPacket[inputIndexClient].setTransactionStatus("transferred");
-    
-            // Increment input index for client and update buffer status
-            setinputIndexClient((getinputIndexClient() + 1) % getMaxNbPackets());
-            inBufferStatus = (getinputIndexClient() == getoutputIndexServer()) ? "full" : "normal";
-    
-        } catch (InterruptedException e) {
-            System.out.println("Error in send: " + e.getMessage());
-            return false;
-        } finally {
-            outBufferSemaphore.release(); // Signal availability to output buffer
-        }
-    
-        return true;
-    }
-    
-    
+        public static boolean send(Transactions inPacket)
+        {
+        	
+        		  inComingPacket[inputIndexClient].setAccountNumber(inPacket.getAccountNumber());
+        		  inComingPacket[inputIndexClient].setOperationType(inPacket.getOperationType());
+        		  inComingPacket[inputIndexClient].setTransactionAmount(inPacket.getTransactionAmount());
+        		  inComingPacket[inputIndexClient].setTransactionBalance(inPacket.getTransactionBalance());
+        		  inComingPacket[inputIndexClient].setTransactionError(inPacket.getTransactionError());
+        		  inComingPacket[inputIndexClient].setTransactionStatus("transferred");
+            
+        		 /* System.out.println("\n DEBUG : Network.send() - index inputIndexClient " + inputIndexClient); */
+        		  /* System.out.println("\n DEBUG : Network.send() - account number " + inComingPacket[inputIndexClient].getAccountNumber()); */
+            
+        		  setinputIndexClient(((getinputIndexClient( ) + 1) % getMaxNbPackets ()));	/* Increment the input buffer index  for the client */
+        		  /* Check if input buffer is full */
+        		  if (getinputIndexClient() == getoutputIndexServer())
+        		  {	
+        			  setInBufferStatus("full");
+            	
+        			/* System.out.println("\n DEBUG : Network.send() - inComingBuffer status " + getInBufferStatus()); */
+        		  }
+        		  else 
+        		  {
+        			  setInBufferStatus("normal");
+        		  }
+            
+            return true;
+        }   
          
       /** Transmitting the transactions from the server to the client through the network 
      * @return
      * @param outPacket updated transaction received by the client
      * 
      */
-    public static synchronized boolean receive(Transactions outPacket) {
-        if (outPacket == null) {
-            System.out.println("Error: Attempted to receive into a null transaction.");
-            return false;
-        }
-    
-        try {
-            outBufferSemaphore.acquire(); // Wait until output buffer has data
-    
-            // Preserve existing buffer operations
-            outPacket.setAccountNumber(outGoingPacket[outputIndexClient].getAccountNumber());
-            outPacket.setOperationType(outGoingPacket[outputIndexClient].getOperationType());
-            outPacket.setTransactionAmount(outGoingPacket[outputIndexClient].getTransactionAmount());
-            outPacket.setTransactionBalance(outGoingPacket[outputIndexClient].getTransactionBalance());
-            outPacket.setTransactionError(outGoingPacket[outputIndexClient].getTransactionError());
-            outPacket.setTransactionStatus("done");
-    
-            // Increment output index for client and update buffer status
-            setoutputIndexClient((getoutputIndexClient() + 1) % getMaxNbPackets());
-            outBufferStatus = (getoutputIndexClient() == getinputIndexServer()) ? "empty" : "normal";
-    
-        } catch (InterruptedException e) {
-            System.out.println("Error in receive: " + e.getMessage());
-            return false;
-        } finally {
-            inBufferSemaphore.release(); // Signal input buffer availability
-        }
-    
-        return true;
-    }
-    
+         public static boolean receive(Transactions outPacket)
+        {
+
+        		 outPacket.setAccountNumber(outGoingPacket[outputIndexClient].getAccountNumber());
+        		 outPacket.setOperationType(outGoingPacket[outputIndexClient].getOperationType());
+        		 outPacket.setTransactionAmount(outGoingPacket[outputIndexClient].getTransactionAmount());
+        		 outPacket.setTransactionBalance(outGoingPacket[outputIndexClient].getTransactionBalance());
+        		 outPacket.setTransactionError(outGoingPacket[outputIndexClient].getTransactionError());
+        		 outPacket.setTransactionStatus("done");
+            
+        		 /* System.out.println("\n DEBUG : Network.receive() - index outputIndexClient " + outputIndexClient); */
+        		 /* System.out.println("\n DEBUG : Network.receive() - account number " + outPacket.getAccountNumber()); */
+            
+        		 setoutputIndexClient(((getoutputIndexClient( ) + 1) % getMaxNbPackets( ))); /* Increment the output buffer index for the client */
+        		 /* Check if output buffer is empty */
+        		 if ( getoutputIndexClient( ) == getinputIndexServer( ))
+        		 {	
+        			 setOutBufferStatus("empty");
+            
+        			/* System.out.println("\n DEBUG : Network.receive() - outGoingBuffer status " + getOutBufferStatus()); */
+        		 }
+        		 else 
+        		 {
+        			 setOutBufferStatus("normal"); 
+        		 }
+        	            
+             return true;
+        }   
          
     
     /**
@@ -563,58 +554,13 @@ public class Network extends Thread {
      * @return 
      * @param
      */
-    @Override
-    public void run() {
-        System.out.println("Network thread started.");
-        int yieldCount = 0; // Counter to limit the frequency of yielding messages
-    
-        while (isConnected()) {
-            // Reduce frequency of "Buffer not normal, yielding..." messages
-            if (!isBufferStatusNormal()) {
-                if (yieldCount % 100 == 0) {
-                    System.out.println("Network: Buffer not normal, yielding...");
-                }
-                yieldCount++;
-                try {
-                    Thread.sleep(10); // Optional delay to give other threads time to work
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            } else {
-                yieldCount = 0; // Reset count when buffer is normal
-            }
-    
-            if (!Network.isEmpty()) {
-                System.out.println("Network: Processing packets in buffer.");
-            }
-        }
-    
-        System.out.println("Network thread terminated.");
+    public void run()
+    {	
+    	/* System.out.println("\n DEBUG : Network.run() - starting network thread"); */
+    	
+    	while (true)
+    	{
+    		/*................................................................................................................................................................*/
+    	}    
     }
-    
-     
-    public static boolean clientIsConnected() {
-        return "connected".equals(clientConnectionStatus);
-    }
-    
-    public static boolean serverIsConnected() {
-        return "connected".equals(serverConnectionStatus);
-    }
-    public static boolean isConnected() {
-        // Returns true if either the client or server is connected
-        return clientIsConnected() || serverIsConnected();
-    }    
-    
-    public boolean isBufferStatusNormal() {
-        return "normal".equals(inBufferStatus) && "normal".equals(outBufferStatus);
-    }
-    
-    public static boolean isFull() {
-        return "full".equals(inBufferStatus) || "full".equals(outBufferStatus);
-    }
-    
-    public static boolean isEmpty() {
-        return "empty".equals(inBufferStatus) || "empty".equals(outBufferStatus);
-    }
-    
 }

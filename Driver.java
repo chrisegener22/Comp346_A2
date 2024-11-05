@@ -17,24 +17,17 @@ public class Driver {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-      // Initialize and start the network
-      Network network = new Network();
-      network.start();
+        
+    	Network objNetwork = new Network( );            /* Activate the network */
+        objNetwork.start();
 
-      // Start the sending client
-      Client sendingClient = new Client("sending");
-      sendingClient.start();
-
-      // Start the receiving client
-      Client receivingClient = new Client("receiving");
-      receivingClient.start();
-
-      // Initialize and start the server
-      Server server1 = new Server("Serv 1");
-      server1.start();
-
-      Server server2 = new Server("Serv 2");
-      server2.start();
-  }
+        Client objClient1 = new Client("sending");          /* Start the sending client thread */
+        objClient1.start();
+        Client objClient2 = new Client("receiving");        /* Start the receiving client thread */
+        objClient2.start();
+        
+      /*..............................................................................................................................................................*/
+       
+    }
     
-}
+ }
