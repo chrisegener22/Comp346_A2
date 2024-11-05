@@ -41,7 +41,7 @@ public class Network extends Thread {
          clientConnectionStatus = "idle";
          serverConnectionStatus = "idle";
          portID = 0;
-         maxNbPackets = 10;
+         maxNbPackets = 50;
          inComingPacket = new Transactions[maxNbPackets];
          outGoingPacket = new Transactions[maxNbPackets];
          for (i=0; i < maxNbPackets; i++)
@@ -554,13 +554,28 @@ public class Network extends Thread {
      * @return 
      * @param
      */
-    public void run()
-    {	
-    	/* System.out.println("\n DEBUG : Network.run() - starting network thread"); */
-    	
-    	while (true)
-    	{
-    		/*................................................................................................................................................................*/
-    	}    
+    public void run() {
+        System.out.println("\n DEBUG: Network.run() - starting network thread");
+    
+        while (networkStatus.equals("active")) {
+            if (clientConnectionStatus.equals("disconnected") && serverConnectionStatus.equals("disconnected")) {
+                networkStatus = "inactive";
+                System.out.println("Terminating network thread - both client and server are disconnected.");
+                break;
+            }
+    
+            // Process buffer states with yields
+            if (inBufferStatus.equals("full") && clientConnectionStatus.equals("connected")) {
+                Thread.yield();
+            }
+    
+            if (outBufferStatus.equals("empty") && serverConnectionStatus.equals("connected")) {
+                Thread.yield();
+            }
+    
+            Thread.yield();
+        }
     }
+    
+    
 }
