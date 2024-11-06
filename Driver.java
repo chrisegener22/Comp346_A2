@@ -18,7 +18,7 @@ public class Driver {
      */
     public static void main(String[] args) {
         
-    	Network objNetwork = new Network( );            /* Activate the network */
+    	Network objNetwork = new Network();            /* Activate the network */
       objNetwork.start();
 
       Server objserver1 = new Server("serv 1");
@@ -39,7 +39,6 @@ public class Driver {
       }
       
       System.out.println("Both server threads have terminated. Disconnecting network.");
-      Network.disconnect(Network.getServerIP()); // Access disconnect method in a static way
 
     }
     

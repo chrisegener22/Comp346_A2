@@ -1,8 +1,8 @@
 
-import java.util.Scanner;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.InputMismatchException;
+import java.util.Scanner;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -149,14 +149,14 @@ public class Client extends Thread {
      * @return 
      * @param
      */
-    public void sendTransactions() {
+    public void sendTransactions() throws InterruptedException {
         int i = 0;
         while (i < getNumberOfTransactions()) {
             if (Network.getInBufferStatus().equals("full")) {
                 Thread.yield();
                 continue;
             }
-            System.out.println("Sending transaction for account " + transaction[i].getAccountNumber()); // Debug line
+            System.out.println("Sending transaction for account " + transaction[i].getAccountNumber());
             Network.send(transaction[i]);
             transaction[i].setTransactionStatus("sent");
             i++;
@@ -170,7 +170,7 @@ public class Client extends Thread {
      * @return 
      * @param transact
      */
-    public void receiveTransactions() {
+    public void receiveTransactions() throws InterruptedException {
         int i = 0;
         Transactions transact = new Transactions();
         while (i < getNumberOfTransactions()) {
@@ -208,23 +208,28 @@ public class Client extends Thread {
         long sendClientStartTime = 0, sendClientEndTime = 0;
         long receiveClientStartTime = 0, receiveClientEndTime = 0;
     
-        if (clientOperation.equals("sending")) {
-            sendClientStartTime = System.currentTimeMillis(); // Start time for sending
-            sendTransactions(); // Perform sending operations
-            sendClientEndTime = System.currentTimeMillis(); // End time for sending
-            System.out.println("\n Terminating client sending thread - Running time: " 
-                               + (sendClientEndTime - sendClientStartTime) + " ms");
-        } 
-        else if (clientOperation.equals("receiving")) {
-            receiveClientStartTime = System.currentTimeMillis(); // Start time for receiving
-            receiveTransactions(); // Perform receiving operations
-            receiveClientEndTime = System.currentTimeMillis(); // End time for receiving
-            System.out.println("\n Terminating client receiving thread - Running time: " 
-                               + (receiveClientEndTime - receiveClientStartTime) + " ms");
-            Network.disconnect(Network.getClientIP());
-
+        try {
+            if (clientOperation.equals("sending")) {
+                sendClientStartTime = System.currentTimeMillis();
+                sendTransactions();
+                sendClientEndTime = System.currentTimeMillis();
+                System.out.println("\nTerminating client sending thread - Running time: " 
+                                   + (sendClientEndTime - sendClientStartTime) + " ms");
+            } 
+            else if (clientOperation.equals("receiving")) {
+                receiveClientStartTime = System.currentTimeMillis();
+                receiveTransactions();
+                receiveClientEndTime = System.currentTimeMillis();
+                System.out.println("\nTerminating client receiving thread - Running time: " 
+                                   + (receiveClientEndTime - receiveClientStartTime) + " ms");
+                Network.disconnect(Network.getClientIP());
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.out.println("Client " + clientOperation + " interrupted: " + e.getMessage());
         }
     }
+    
     
                 
 }

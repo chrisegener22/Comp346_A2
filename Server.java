@@ -1,8 +1,8 @@
 
-import java.util.Scanner;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.InputMismatchException;
+import java.util.Scanner;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -260,7 +260,7 @@ public class Server extends Thread {
      * @return 
      * @param trans
      */
-    public boolean processTransactions(Transactions trans) {
+    public boolean processTransactions(Transactions trans) throws InterruptedException {
         int accIndex;
         double newBalance;
     
@@ -269,11 +269,10 @@ public class Server extends Thread {
                 Thread.yield();
                 continue;
             }
-            
+    
             Network.transferIn(trans); // Transfer from input buffer
             accIndex = findAccount(trans.getAccountNumber());
     
-            // Process transaction types
             if (trans.getOperationType().equals("DEPOSIT")) {
                 newBalance = deposit(accIndex, trans.getTransactionAmount());
             } else if (trans.getOperationType().equals("WITHDRAW")) {
@@ -296,6 +295,7 @@ public class Server extends Thread {
         }
         return true;
     }
+    
     
          
     /** 
@@ -385,19 +385,22 @@ public class Server extends Thread {
         Transactions trans = new Transactions();
         long serverStartTime = System.currentTimeMillis();
     
-        // Set the running status based on thread ID
         if (serverThreadId.equals("Thread1")) {
             serverThreadRunningStatus1 = "running";
         } else {
             serverThreadRunningStatus2 = "running";
         }
     
-        // Process all transactions
-        processTransactions(trans);
+        try {
+            // Process all transactions
+            processTransactions(trans);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.out.println("Server " + serverThreadId + " interrupted: " + e.getMessage());
+        }
     
         long serverEndTime = System.currentTimeMillis();
     
-        // Set the terminated status and print termination message
         if (serverThreadId.equals("Thread1")) {
             serverThreadRunningStatus1 = "terminated";
         } else {
@@ -405,9 +408,10 @@ public class Server extends Thread {
         }
     
         Network.disconnect(Network.getServerIP());
-
+    
         System.out.println("\nTerminating " + serverThreadId + " - Running time: " + (serverEndTime - serverStartTime) + " ms");
     }
+    
     
 }
 
